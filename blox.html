@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full-Featured Block Coding Environment</title>
+<style>
+  body {
+    background: #222;
+    color: #eee;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 10px;
+    user-select: none;
+  }
+  h1, h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 8px;
+  }
+  #container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  #leftPanel, #rightPanel {
+    background: #333;
+    padding: 12px;
+    border-radius: 10px;
+  }
+  #leftPanel {
+    flex: 2 1 520px;
+    min-width: 500px;
+  }
+  #rightPanel {
+    flex: 1 1 300px;
+    min-width: 280px;
+  }
+  #palette, #program {
+    background: #444;
+    border-radius: 8px;
+    min-height: 130px;
+    padding: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-bottom: 10px;
+  }
+  #program {
+    border: 2px dashed #666;
+    min-height: 200px;
+  }
+  .block {
+    display: inline-block;
+    margin: 6px 8px 6px 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #eee;
+    font-weight: 600;
+    user-select: none;
+  }
+  .motion { background: #4C97FF; }
+  .looks { background: #9966FF; }
+  .sound { background: #CF63CF; }
+  .events { background: #FFBF00; }
+  .control { background: #FFAB19; }
+  .sensing { background: #5CB1D6; }
+  .operators { background: #59C059; }
+  .variables { background: #FF8C1A; }
+  .custom { background: #FF6680; }
+  .pen { background: #0fBD8C; }
+  .data { background: #FF6347; }
+  .text { background: #8A2BE2; }
+  .clones { background: #A0522D; }
+  .special { background: #e61919; }
+
+
+  #tabs {
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    display: flex;
+  }
+  #tabs button {
+    padding: 6px 14px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    border: none;
+    border-radius: 6px;
+    background: #555;
+    color: #ccc;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  #tabs button.active {
+    background: #007bff;
+    color: #fff;
+  }
+
+  #run {
+    background: #4caf50;
+    color: white;
+    font-size: 18px;
+    padding: 10px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+   #run.stop {
+    background: #f44336;
+   }
+
+  #output {
+    background: #111;
+    color: #0f0;
+    font-family: monospace;
+    padding: 8px;
+    border-radius: 6px;
+    min-height: 40px;
+    white-space: pre-wrap;
+    margin-top: 10px;
+  }
+
+  #stageContainer {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+  }
+  .aspect-ratio-box {
+    height: 0;
+    padding-top: 80%; /* 500 / 400 = 80% */
+    position: relative;
+  }
+  #penCanvas, #stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    display: block;
+  }
+  #stage {
+    background: transparent;
+    z-index: 10;
+    cursor: default;
+  }
+  #penCanvas {
+    background: #fff;
+    z-index: 5;
+    border: 2px solid #666;
+  }
+
+  #costumeEditor {
+    background: #444;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  #costumeCanvas {
+    background: white;
+    border: 2px solid #666;
+    border-radius: 10px;
+    cursor: crosshair;
+    display: block;
+    margin-bottom: 10px;
+    image-rendering: pixelated;
+  }
+  #tools {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #tools button {
+    margin-right: 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    background: #555;
+    color: #ccc;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  #tools button.active {
+    background: #007bff;
+    color: white;
+  }
+  #tools input[type="color"] {
+    border: none;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    background: none;
+  }
+  #tools label {
+    font-size: 0.9em;
+  }
+
+  .block input, .block select {
+    background: #eee;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 14px;
+    width: auto;
+    color: #111;
+  }
+  .block input[type="text"] {
+    width: 60px;
+  }
+  .block input[type="number"]{
+      width: 50px;
+  }
+
+  #projectHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #333;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+  }
+  #projectInfo input {
+    background: #555;
+    border: 1px solid #777;
+    color: #eee;
+    padding: 6px;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+  #userInfo {
+    font-weight: bold;
+  }
+  #userInfo button {
+    margin-left: 10px;
+  }
+  .action-btn {
+    background: #007bff;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .action-btn:hover {
+    background: #0056b3;
+  }
+
+  #bottomPanelsContainer {
+      display: flex;
+      gap: 20px;
+      padding: 0 10px;
+  }
+  #spritePanel, #stagePanel {
+    background: #333;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 20px;
+  }
+  #spritePanel {
+      flex-grow: 1;
+  }
+  #stagePanel {
+      flex-shrink: 0;
+  }
+  .thumbnail-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    padding: 5px;
+    background: #444;
+    border-radius: 8px;
+    min-height: 94px;
+  }
+  .thumbnail {
+    border: 3px solid #666;
+    border-radius: 8px;
+    padding: 5px;
+    cursor: pointer;
+    text-align: center;
+    background: #555;
+    width: 80px;
+  }
+  .thumbnail.active {
+    border-color: #007bff;
+    box-shadow: 0 0 8px #007bff;
+  }
+  .thumbnail canvas {
+    width: 64px;
+    height: 64px;
+    background: white;
+    border-radius: 4px;
+    image-rendering: pixelated;
+  }
+  .thumbnail p {
+    margin: 4px 0 0;
+    font-size: 0.9em;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* --- MODAL STYLES --- */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.8);
+  }
+  .modal .modal-content {
+    background-color: #333;
+    margin: 10% auto;
+    padding: 25px;
+    border: 1px solid #888;
+    width: 90%;
+    border-radius: 10px;
+    text-align: center;
+  }
+  #loginModal .modal-content {
+    max-width: 400px;
+  }
+  #sharedProjectsModal .modal-content, #codeEditorModal .modal-content {
+      max-width: 800px;
+  }
+  .modal input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #666;
+    background: #444;
+    color: #eee;
+  }
+  .modal button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+  #loginModal .toggle-link {
+      background: none;
+      border: none;
+      color: #007bff;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 15px;
+      padding: 0;
+      width: auto;
+  }
+  .modal-error-message {
+      color: #f44336;
+      margin-top: 10px;
+      min-height: 20px;
+  }
+  #sharedProjectsList {
+    list-style-type: none;
+    padding: 0;
+  }
+  #sharedProjectsList li {
+    background: #444;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #sharedProjectsList li button {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 14px;
+  }
+  .modal .close-btn {
+    float: right;
+    cursor: pointer;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    line-height: 1;
+  }
+  .modal .close-btn:hover {
+      color: white;
+  }
+
+  /* --- CODE EDITOR & SPECIAL BUTTONS --- */
+  #codeEditorContent {
+      display: flex;
+      gap: 20px;
+      text-align: left;
+  }
+  #codeTextarea {
+      flex: 1;
+      height: 400px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: 1px solid #555;
+      border-radius: 5px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      resize: vertical;
+  }
+  #codeGuide {
+      flex: 1;
+      height: 400px;
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-y: auto;
+      border: 1px solid #555;
+      font-size: 0.9em;
+  }
+  #codeGuide h3, #codeGuide h4 {
+      margin-top: 0;
+      color: #58a6ff;
+      border-bottom: 1px solid #555;
+      padding-bottom: 5px;
+  }
+  #codeGuide h4 {
+      margin-top: 15px;
+  }
+  #codeGuide code {
+      background: #1e1e1e;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #ce9178;
+      display: block;
+      white-space: pre;
+      margin-top: 5px;
+  }
+  #codeEditorModal .modal-footer {
+      text-align: right;
+      margin-top: 20px;
+  }
+  #codeEditorModal .modal-footer button {
+      width: auto;
+      font-size: 14px;
+      padding: 8px 16px;
+      margin-left: 10px;
+  }
+  #specialCodeButtonsContainer {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 15;
+      gap: 10px;
+  }
+  .special-code-button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background-color: rgba(0,0,0,0.5);
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+  .special-code-button:hover {
+      background-color: rgba(255,255,255,0.3);
+  }
+
+
+  /* --- MOBILE STYLES --- */
+  @media (max-width: 800px) {
+    #container, #bottomPanelsContainer, #projectHeader {
+        flex-direction: column;
+    }
+    #leftPanel, #rightPanel {
+        flex-basis: 100%;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #leftPanel { order: 2; }
+    #rightPanel { order: 1; }
+    #bottomPanelsContainer { order: 3; }
+    #projectHeader { gap: 10px; }
+    #codeEditorContent { flex-direction: column; }
+  }
+
+
+</style>
+</head>
+<body>
+
+<div id="projectHeader">
+    <div id="projectInfo">
+        <input type="text" id="projectName" placeholder="Untitled Project">
+        <button id="shareProjectBtn" class="action-btn">Share</button>
+    </div>
+    <div id="userInfo">
+        <span>Welcome, <span id="usernameDisplay">User</span>!</span>
+        <button id="logoutBtn" class="action-btn">Log Out</button>
+    </div>
+</div>
+
+<div id="container">
+  <div id="leftPanel">
+    <div id="tabs">
+      <button data-tab="motion" class="active">Motion</button>
+      <button data-tab="looks">Looks</button>
+      <button data-tab="sound">Sound</button>
+      <button data-tab="pen">Pen</button>
+      <button data-tab="events">Events</button>
+      <button data-tab="control">Control</button>
+      <button data-tab="sensing">Sensing</button>
+      <button data-tab="operators">Operators</button>
+      <button data-tab="variables">Variables</button>
+      <button data-tab="data">Data</button>
+      <button data-tab="text">Text</button>
+      <button data-tab="clones">Clones</button>
+      <button data-tab="custom">My Blocks</button>
+      <button data-tab="special">SPECIAL</button>
+    </div>
+    <div id="palette"></div>
+
+    <h2>Editing: <span id="editingTargetName"></span></h2>
+    <div id="program"></div>
+    <div id="output"></div>
+  </div>
+
+  <div id="rightPanel">
+    <div id="stageContainer">
+       <div class="aspect-ratio-box">
+         <canvas id="penCanvas" width="500" height="400" title="Pen Layer"></canvas>
+         <canvas id="stage" width="500" height="400" title="Stage"></canvas>
+       </div>
+       <div id="specialCodeButtonsContainer">
+          <button id="specialBtn1" class="special-code-button">1</button>
+          <button id="specialBtn2" class="special-code-button">2</button>
+          <button id="specialBtn3" class="special-code-button">3</button>
+       </div>
+    </div>
+    <div id="costumeEditor">
+        <h2>Costume Editor</h2>
+        <div id="tools">
+            <input type="color" id="color" title="Brush Color" value="#ff0000" />
+            <button data-tool="brush" id="brushBtn" class="active" title="Brush">Brush</button>
+            <button data-tool="eraser" id="eraserBtn" title="Eraser">Eraser</button>
+            <label for="brushSize">Size:</label>
+            <input type="range" id="brushSize" min="1" max="50" value="5" title="Brush Size">
+            <button id="clearCostume" title="Clear Canvas">Clear</button>
+            <button id="saveCostume" title="Save Costume">Save</button>
+        </div>
+        <canvas id="costumeCanvas" width="160" height="160" title="Costume Canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="bottomPanelsContainer">
+    <div id="stagePanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2>Stage</h2>
+            <button id="uploadBackdropBtn" class="action-btn">Upload</button>
+            <input type="file" id="backdropUpload" accept="image/*" style="display: none;">
+        </div>
+        <div id="backdropThumbnailContainer" class="thumbnail-container"></div>
+    </div>
+    <div id="spritePanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2>Sprites</h2>
+            <div>
+              <button id="run">Run Project</button>
+              <button id="browseSharedBtn" class="action-btn">Browse</button>
+              <button id="newSpriteBtn" class="action-btn">New</button>
+            </div>
+        </div>
+        <div id="spriteList" class="thumbnail-container"></div>
+    </div>
+</div>
+
+<!-- --- MODALS --- -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <div id="signInView">
+            <h2>Sign In</h2>
+            <input type="text" id="signInUser" placeholder="Username" autocomplete="username">
+            <input type="password" id="signInPass" placeholder="Password" autocomplete="current-password">
+            <button id="signInBtn" class="action-btn">Sign In</button>
+            <div id="loginErrorMessage" class="modal-error-message"></div>
+            <button id="toggleToSignUp" class="toggle-link">Don't have an account? Sign Up</button>
+        </div>
+        <div id="signUpView" style="display: none;">
+            <h2>Sign Up</h2>
+            <input type="text" id="signUpUser" placeholder="Choose a Username" autocomplete="username">
+            <input type="password" id="signUpPass" placeholder="Choose a Password" autocomplete="new-password">
+            <button id="signUpBtn" class="action-btn">Sign Up</button>
+            <div id="signUpErrorMessage" class="modal-error-message"></div>
+            <button id="toggleToSignIn" class="toggle-link">Already have an account? Sign In</button>
+        </div>
+    </div>
+</div>
+
+<div id="sharedProjectsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="sharedProjectsCloseBtn">×</span>
+        <h2>Shared Projects</h2>
+        <ul id="sharedProjectsList"></ul>
+    </div>
+</div>
+
+<div id="codeEditorModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="codeEditorCloseBtn">×</span>
+        <h2>Special Code Editor</h2>
+        <div id="codeEditorContent">
+            <textarea id="codeTextarea" spellcheck="false"></textarea>
+            <div id="codeGuide">
+                <h3>SPECIAL Code Guide</h3>
+                <p>Commands are run one line at a time.</p>
+                
+                <h4>Events</h4>
+                <p>Code under these blocks only runs when the event happens.</p>
+                <p><code>when button (1) pressed:</code></p>
+                <p><code>  set led at x5 y5 on</code></p>
+                <p><code>when button (2) pressed:</code></p>
+                <p><code>when button (3) pressed:</code></p>
+
+                <h4>LED Control</h4>
+                <p><code>set led at x[N] y[N] on</code></p>
+                <p><code>set led at x[N] y[N] off</code></p>
+                <p><code>move led at x[N] y[N] to x[N] y[N]</code></p>
+
+                <h4>Variables</h4>
+                <p><code>my_var = 123</code></p>
+                <p><code>my_other_var = my_var</code></p>
+
+                <h4>Grouping LEDs</h4>
+                <p><code>my_group = group leds at x0 y0, x1 y0, x1 y1</code></p>
+                <p>You can turn a whole group on/off:</p>
+                <p><code>set led at my_group on</code></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="saveCodeBtn" class="action-btn">Save & Close</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+(() => {
+  // --- Element Cache ---
+  const elements = {
+    palette: document.getElementById('palette'), program: document.getElementById('program'), runBtn: document.getElementById('run'), output: document.getElementById('output'), stageCanvas: document.getElementById('stage'), penCanvas: document.getElementById('penCanvas'), costumeCanvas: document.getElementById('costumeCanvas'), colorInput: document.getElementById('color'), clearCostumeBtn: document.getElementById('clearCostume'), saveCostumeBtn: document.getElementById('saveCostume'), editingTargetNameDisplay: document.getElementById('editingTargetName'), spriteListContainer: document.getElementById('spriteList'), newSpriteBtn: document.getElementById('newSpriteBtn'), tabButtons: document.querySelectorAll('#tabs button'), projectName: document.getElementById('projectName'), shareProjectBtn: document.getElementById('shareProjectBtn'), usernameDisplay: document.getElementById('usernameDisplay'), logoutBtn: document.getElementById('logoutBtn'), browseSharedBtn: document.getElementById('browseSharedBtn'), brushBtn: document.getElementById('brushBtn'), eraserBtn: document.getElementById('eraserBtn'), brushSizeSlider: document.getElementById('brushSize'), backdropThumbnailContainer: document.getElementById('backdropThumbnailContainer'), uploadBackdropBtn: document.getElementById('uploadBackdropBtn'), backdropUploadInput: document.getElementById('backdropUpload'), costumeEditor: document.getElementById('costumeEditor'), 
+    loginModal: document.getElementById('loginModal'), signInView: document.getElementById('signInView'), signUpView: document.getElementById('signUpView'), signInUser: document.getElementById('signInUser'), signInPass: document.getElementById('signInPass'), signInBtn: document.getElementById('signInBtn'), loginErrorMessage: document.getElementById('loginErrorMessage'), toggleToSignUp: document.getElementById('toggleToSignUp'), signUpUser: document.getElementById('signUpUser'), signUpPass: document.getElementById('signUpPass'), signUpBtn: document.getElementById('signUpBtn'), signUpErrorMessage: document.getElementById('signUpErrorMessage'), toggleToSignIn: document.getElementById('toggleToSignIn'), 
+    sharedProjectsModal: document.getElementById('sharedProjectsModal'), sharedProjectsList: document.getElementById('sharedProjectsList'), sharedProjectsCloseBtn: document.getElementById('sharedProjectsCloseBtn'),
+    codeEditorModal: document.getElementById('codeEditorModal'), codeTextarea: document.getElementById('codeTextarea'), codeEditorCloseBtn: document.getElementById('codeEditorCloseBtn'), saveCodeBtn: document.getElementById('saveCodeBtn'),
+    specialCodeButtonsContainer: document.getElementById('specialCodeButtonsContainer'),
+    specialBtn1: document.getElementById('specialBtn1'),
+    specialBtn2: document.getElementById('specialBtn2'),
+    specialBtn3: document.getElementById('specialBtn3'),
+  };
+
+  const stageCtx = elements.stageCanvas.getContext('2d');
+  const penCtx = elements.penCanvas.getContext('2d');
+  const costumeCtx = elements.costumeCanvas.getContext('2d');
+
+  // --- Global State ---
+  let sprites = [];
+  let stage = {};
+  let editingMode = 'sprite';
+  let currentSpriteIndex = -1;
+  let programRunning = false;
+  let currentTab = 'motion';
+  let username = '';
+  let animationFrameId = null;
+  let lastAnswer = '';
+  let mouse = {x: 0, y: 0, down: false};
+  const keysDown = {};
+  let activeCodeBlock = null;
+  let specialCodeState = {};
+  
+  // Costume Editor State
+  let isDrawing = false;
+  let currentTool = 'brush';
+  let lastX = 0;
+  let lastY = 0;
+
+  // --- Block Definitions ---
+  const blockDefs = {
+    motion: [ { type: 'move', html: 'move <input type="number" value="10"> steps', cls: 'motion' }, { type: 'turnRight', html: 'turn right <input type="number" value="15">°', cls: 'motion' }, { type: 'turnLeft', html: 'turn left <input type="number" value="15">°', cls: 'motion' }, { type: 'goToXY', html: 'go to x: <input type="number" value="0"> y: <input type="number" value="0">', cls: 'motion' }, { type: 'setX', html: 'set x to <input type="number" value="0">', cls: 'motion' }, { type: 'setY', html: 'set y to <input type="number" value="0">', cls: 'motion' }, ],
+    looks: [ { type: 'say', html: 'say <input type="text" value="Hello!"> for <input type="number" value="2"> secs', cls: 'looks' }, { type: 'think', html: 'think <input type="text" value="Hmm...">', cls: 'looks' }, { type: 'show', html: 'show', cls: 'looks' }, { type: 'hide', html: 'hide', cls: 'looks' }, { type: 'setSize', html: 'set size to <input type="number" value="100"> %', cls: 'looks' }, { type: 'changeSize', html: 'change size by <input type="number" value="10">', cls: 'looks' }, ],
+    sound: [ { type: 'playSound', html: 'play sound from URL <input type="text" value="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3">', cls: 'sound' } ],
+    pen: [ { type: 'penDown', html: 'pen down', cls: 'pen' }, { type: 'penUp', html: 'pen up', cls: 'pen' }, { type: 'setPenColor', html: 'set pen color to <input type="color" value="#ff0000">', cls: 'pen' }, { type: 'setPenSize', html: 'set pen size to <input type="number" value="5">', cls: 'pen' }, { type: 'stamp', html: 'stamp', cls: 'pen'}, { type: 'penClear', html: 'clear pen drawings', cls: 'pen' }, ],
+    variables: [ { type: 'setVar', html: 'set <input type="text" value="my variable"> to <input type="text" value="0">', cls: 'variables' }, { type: 'changeVar', html: 'change <input type="text" value="my variable"> by <input type="number" value="1">', cls: 'variables' }, ],
+    data: [ { type: 'addToList', html: 'add <input type="text" value="thing"> to <input type="text" value="my list">', cls: 'data' }, { type: 'deleteFromList', html: 'delete <input type="number" value="1"> of <input type="text" value="my list">', cls: 'data' }, { type: 'insertIntoList', html: 'insert <input type="text" value="thing"> at <input type="number" value="1"> of <input type="text" value="my list">', cls: 'data' }, { type: 'replaceInList', html: 'replace item <input type="number" value="1"> of <input type="text" value="my list"> with <input type="text" value="thing">', cls: 'data' }, ],
+    text: [ { type: 'join', html: 'set <input type="text" value="var"> to join <input type="text" value="hello "> and <input type="text" value="world">', cls: 'text' }, { type: 'letter', html: 'set <input type="text" value="var"> to letter <input type="number" value="1"> of <input type="text" value="world">', cls: 'text' }, { type: 'length', html: 'set <input type="text" value="var"> to length of <input type="text" value="world">', cls: 'text' } ],
+    clones: [ { type: 'createClone', html: 'create clone of myself', cls: 'clones' }, { type: 'whenIStartAsClone', html: 'when I start as a clone', cls: 'clones' }, { type: 'deleteClone', html: 'delete this clone', cls: 'clones' } ],
+    events: [ { type: 'whenRun', html: 'when project runs', cls: 'events'}, { type: 'whenClicked', html: 'when this sprite clicked', cls: 'events'}, { type: 'whenKeyPressed', html: 'when <input type="text" value="space"> key pressed', cls: 'events' } ],
+    control: [ { type: 'forever', html: 'forever', cls: 'control' }, { type: 'wait', html: 'wait <input type="number" value="1"> secs', cls: 'control' }, { type: 'repeat', html: 'repeat <input type="number" value="10">', cls: 'control' } ],
+    sensing: [ { type: 'ask', html: 'ask <input type="text" value="What\'s your name?"> and wait', cls: 'sensing' }, { type: 'isKeyPressed', html: 'set <input type="text" value="result"> to key <input type="text" value="space"> pressed?' , cls: 'sensing'}, { type: 'isMouseDown', html: 'set <input type="text" value="result"> to mouse down?', cls: 'sensing' }, { type: 'getMouse', html: 'set <input type="text" value="var"> to mouse <select><option>x</option><option>y</option></select>', cls: 'sensing'}],
+    operators: [ { type: 'add', html: 'set <input type="text" value="var"> to <input type="number" value=""> + <input type="number" value="">', cls: 'operators' }, { type: 'subtract', html: 'set <input type="text" value="var"> to <input type="number" value=""> - <input type="number" value="">', cls: 'operators' }, { type: 'multiply', html: 'set <input type="text" value="var"> to <input type="number" value=""> * <input type="number" value="">', cls: 'operators' }, { type: 'divide', html: 'set <input type="text" value="var"> to <input type="number" value=""> / <input type="number" value="">', cls: 'operators' }, { type: 'random', html: 'set <input type="text" value="var"> to random <input type="number" value="1"> to <input type="number" value="10">', cls: 'operators' }, { type: 'isGreaterThan', html: 'set <input type="text" value="var"> to <input type="number" value=""> > <input type="number" value="">', cls: 'operators' }, { type: 'isLessThan', html: 'set <input type="text" value="var"> to <input type="number" value=""> < <input type="number" value="">', cls: 'operators' }, { type: 'isEqual', html: 'set <input type="text" value="var"> to <input type="number" value=""> = <input type="number" value="">', cls: 'operators' }, { type: 'and', html: 'set <input type="text" value="var"> to <input type="text" value="true"> and <input type="text" value="false">', cls: 'operators' }, { type: 'or', html: 'set <input type="text" value="var"> to <input type="text" value="true"> or <input type="text" value="false">', cls: 'operators' }, { type: 'not', html: 'set <input type="text" value="var"> to not <input type="text" value="true">', cls: 'operators' } ],
+    custom: [ { type: 'defineBlock', html: 'define <input type="text" value="my block"> with inputs <input type="text" value="arg1">', cls: 'custom' }, { type: 'runBlock', html: 'run <input type="text" value="my block"> with values <input type="text" value="val1">', cls: 'custom' }, ],
+    special: [ { type: 'code', html: 'code', cls: 'special' } ]
+  };
+
+  // --- Core Functions ---
+  function getActiveTarget() { return editingMode === 'sprite' ? sprites[currentSpriteIndex] : stage; }
+
+  function createNewSprite(name, scripts = [], costumeDataURL = null) {
+    const spriteName = name || `Sprite ${sprites.length + 1}`;
+    let costumePromise;
+    const newSprite = {
+      name: spriteName, scripts, eventHandlers: {},
+      spriteState: {
+        x: 250, y: 200, angle: 90, visible: true, size: 100, sayText: '', sayTimeout: null,
+        costume: new Image(), costumeDataURL: null, isClone: false,
+        variables: {}, lists: {},
+        pen: { isDown: false, color: '#ff0000', size: 5 },
+      },
+      clones: []
+    };
+    if (costumeDataURL) {
+      newSprite.spriteState.costumeDataURL = costumeDataURL;
+    } else {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 160; tempCanvas.height = 160;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      tempCtx.fillRect(40, 40, 80, 80);
+      newSprite.spriteState.costumeDataURL = tempCanvas.toDataURL();
+    }
+    newSprite.spriteState.costume.src = newSprite.spriteState.costumeDataURL;
+    costumePromise = newSprite.spriteState.costume.decode().catch(e => console.error("Costume failed to load for " + spriteName, e));
+    return { sprite: newSprite, promise: costumePromise };
+  }
+
+  function initStage() {
+    const whiteCanvas = document.createElement('canvas');
+    whiteCanvas.width = 500; whiteCanvas.height = 400;
+    const ctx = whiteCanvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, 500, 400);
+    const defaultBackdropImg = new Image();
+    defaultBackdropImg.src = whiteCanvas.toDataURL();
+    const backdropPromise = defaultBackdropImg.decode().catch(e => console.error("Backdrop failed to load:", e));
+    stage = {
+      name: 'Stage', scripts: [],
+      backdrops: [{ image: defaultBackdropImg, dataURL: defaultBackdropImg.src }],
+      currentBackdropIndex: 0,
+      eventHandlers: {}, variables: {}, lists: {}, customBlocks: {}
+    };
+    return backdropPromise;
+  }
+
+  function switchEditingTarget(mode, index = -1, isLoading = false) {
+    if (programRunning) return;
+    if (!isLoading) saveBlocksFromProgram();
+    editingMode = mode;
+    currentSpriteIndex = index;
+    loadProgramBlocksForActiveTarget();
+    renderSelectionUI();
+    updateUIHeaders();
+    updateAvailableBlocks();
+    if (mode === 'sprite') {
+      loadCostumeForActiveSprite();
+      elements.costumeEditor.style.display = 'block';
+    } else {
+      elements.costumeEditor.style.display = 'none';
+    }
+  }
+
+  // --- UI Rendering ---
+  function drawBackdrop() {
+    penCtx.clearRect(0, 0, 500, 400);
+    const currentBackdrop = stage.backdrops[stage.currentBackdropIndex];
+    if (currentBackdrop && currentBackdrop.image && currentBackdrop.image.complete) {
+        penCtx.drawImage(currentBackdrop.image, 0, 0, 500, 400);
+    } else {
+        penCtx.fillStyle = 'white';
+        penCtx.fillRect(0,0,500,400);
+    }
+  }
+
+  function renderSelectionUI() {
+    renderSpriteList();
+    renderBackdropThumbnail();
+  }
+
+  function renderSpriteList() {
+    elements.spriteListContainer.innerHTML = '';
+    sprites.forEach((sprite, index) => {
+      const thumb = createThumbnail(sprite.name, sprite.spriteState.costume, () => switchEditingTarget('sprite', index));
+      if (editingMode === 'sprite' && index === currentSpriteIndex) thumb.classList.add('active');
+      elements.spriteListContainer.appendChild(thumb);
+    });
+  }
+
+  function renderBackdropThumbnail() {
+    elements.backdropThumbnailContainer.innerHTML = '';
+    if (!stage.backdrops || stage.backdrops.length === 0) return;
+    const backdrop = stage.backdrops[stage.currentBackdropIndex];
+    if (!backdrop) return;
+    const thumb = createThumbnail('Backdrop', backdrop.image, () => switchEditingTarget('stage'));
+    if (editingMode === 'stage') thumb.classList.add('active');
+    elements.backdropThumbnailContainer.appendChild(thumb);
+  }
+
+  function createThumbnail(name, image, onClick) {
+    const thumb = document.createElement('div');
+    thumb.className = 'thumbnail';
+    const canvas = document.createElement('canvas');
+    const p = document.createElement('p');
+    p.textContent = name;
+    const thumbCtx = canvas.getContext('2d');
+    const drawThumb = () => {
+      thumbCtx.clearRect(0, 0, 64, 64);
+      thumbCtx.fillStyle = 'white';
+      thumbCtx.fillRect(0, 0, 64, 64);
+      if (image && image.complete) thumbCtx.drawImage(image, 0, 0, 64, 64);
+    };
+    if (image && image.complete) {
+      drawThumb();
+    } else if (image) {
+      image.addEventListener('load', drawThumb);
+    }
+    thumb.append(canvas, p);
+    thumb.onclick = onClick;
+    return thumb;
+  }
+
+  function renderPalette(tab) {
+    elements.palette.innerHTML = '';
+    (blockDefs[tab] || []).forEach(def => {
+      const blockEl = document.createElement('div');
+      blockEl.className = 'block ' + def.cls;
+      blockEl.dataset.type = def.type;
+      blockEl.draggable = true;
+      blockEl.innerHTML = def.html;
+      blockEl.addEventListener('dragstart', e => {
+        if (programRunning) return;
+        e.dataTransfer.setData('text/html', blockEl.outerHTML);
+      });
+      elements.palette.appendChild(blockEl);
+    });
+  }
+
+  function updateAvailableBlocks() {
+    const isStage = editingMode === 'stage';
+    ['motion', 'clones', 'pen', 'sensing'].forEach(tab => {
+        const tabEl = document.querySelector(`[data-tab="${tab}"]`);
+        if(tabEl) tabEl.style.display = isStage ? 'none' : 'inline-block';
+    });
+    const activeTabButton = document.querySelector('#tabs button.active');
+    if (activeTabButton && activeTabButton.style.display === 'none') {
+      document.querySelector('[data-tab="events"]').click();
+    }
+  }
+
+  function updateUIHeaders() {
+    const target = getActiveTarget();
+    elements.editingTargetNameDisplay.textContent = target ? target.name : 'None';
+  }
+
+  function drawAllSprites() {
+    stageCtx.clearRect(0, 0, 500, 400);
+    const allEntities = [];
+    sprites.forEach(s => {
+        allEntities.push(s.spriteState);
+        s.clones.forEach(c => allEntities.push(c));
+    })
+
+    allEntities.forEach(state => {
+        if (!state.visible || !state.costume || !state.costume.complete) return;
+        stageCtx.save();
+        stageCtx.translate(state.x, state.y);
+        stageCtx.rotate(state.angle * Math.PI / 180);
+        stageCtx.imageSmoothingEnabled = false;
+        const w = state.costume.width * (state.size / 100);
+        const h = state.costume.height * (state.size / 100);
+        stageCtx.drawImage(state.costume, -w / 2, -h / 2, w, h);
+        if (state.sayText) {
+            stageCtx.font = "14px sans-serif";
+            const textWidth = stageCtx.measureText(state.sayText).width;
+            stageCtx.fillStyle = "white";
+            stageCtx.fillRect(-textWidth/2 - 5, -h/2 - 25, textWidth + 10, 20);
+            stageCtx.strokeStyle = "black";
+            stageCtx.strokeRect(-textWidth/2 - 5, -h/2 - 25, textWidth + 10, 20);
+            stageCtx.fillStyle = "black";
+            stageCtx.fillText(state.sayText, -textWidth/2, -h/2 - 10);
+        }
+        stageCtx.restore();
+    });
+  }
+
+  // --- Block and Program Logic ---
+  function saveBlocksFromProgram() {
+      const target = getActiveTarget();
+      if (!target || programRunning) return;
+      target.scripts = Array.from(elements.program.children).map(blockEl => {
+          const clone = blockEl.cloneNode(true);
+          blockEl.querySelectorAll('input, select').forEach((input, index) => {
+              clone.querySelectorAll('input, select')[index].setAttribute('value', input.value);
+          });
+          return clone.outerHTML;
+      });
+  }
+
+  function loadProgramBlocksForActiveTarget() {
+      const target = getActiveTarget();
+      elements.program.innerHTML = '';
+      if (!target || !target.scripts) return;
+      target.scripts.forEach(blockHTML => {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = blockHTML.trim();
+          const blockEl = tempDiv.firstElementChild;
+          if (blockEl) {
+              attachBlockListeners(blockEl);
+              elements.program.appendChild(blockEl);
+          }
+      });
+  }
+
+  function attachBlockListeners(block) {
+    block.draggable = true;
+    block.addEventListener('dragstart', e => {
+      if (programRunning) return;
+      e.dataTransfer.setData('text/html', block.outerHTML);
+      setTimeout(() => { if (block.parentElement) block.remove(); saveBlocksFromProgram(); }, 0);
+    });
+    block.addEventListener('click', e => {
+      if (programRunning || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (block.parentElement === elements.program) { block.remove(); saveBlocksFromProgram(); }
+    });
+    block.querySelectorAll('input, select').forEach(input => {
+      input.addEventListener('change', saveBlocksFromProgram);
+      input.addEventListener('input', saveBlocksFromProgram);
+    });
+  }
+
+  function parseScripts(target) {
+    target.eventHandlers = { whenRun: [], forever: [], whenClicked: [], whenKeyPressed: {}, whenIStartAsClone: [] };
+    if(target.name === 'Stage') stage.customBlocks = {};
+
+    let currentHatInfo = null;
+    let currentScript = [];
+    const HATS = ['whenRun', 'forever', 'whenClicked', 'whenKeyPressed', 'whenIStartAsClone', 'defineBlock'];
+    
+    function saveCurrentScript() {
+        if (!currentHatInfo) return;
+        if(currentHatInfo.type === 'whenKeyPressed') {
+            if(!target.eventHandlers.whenKeyPressed[currentHatInfo.key]) target.eventHandlers.whenKeyPressed[currentHatInfo.key] = [];
+            target.eventHandlers.whenKeyPressed[currentHatInfo.key].push(currentScript);
+        } else if (currentHatInfo.type === 'defineBlock' && stage.customBlocks) {
+            const [name, args] = currentHatInfo.key;
+            stage.customBlocks[name] = {
+                args: args.split(',').map(a => a.trim()).filter(Boolean),
+                script: currentScript
+            };
+        } else if (target.eventHandlers[currentHatInfo.type]) {
+            target.eventHandlers[currentHatInfo.type].push(currentScript);
+        }
+    }
+
+    (target.scripts || []).forEach(blockHTML => {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = blockHTML.trim();
+      const originalBlock = tempDiv.firstElementChild;
+      
+      if(!originalBlock) return;
+
+      const blockDataForScript = { 
+          type: originalBlock.dataset.type, 
+          html: originalBlock.innerHTML,
+          code: originalBlock.dataset.code
+      };
+
+      if (HATS.includes(blockDataForScript.type)) {
+        if(currentHatInfo) saveCurrentScript();
+        currentScript = [];
+        let key = null;
+        const inputs = originalBlock.querySelectorAll('input');
+        if(blockDataForScript.type === 'whenKeyPressed'){
+            key = inputs[0].value.toLowerCase();
+        } else if (blockDataForScript.type === 'defineBlock') {
+            key = [inputs[0].value, inputs[1].value]; // [name, args]
+        }
+        currentHatInfo = { type: blockDataForScript.type, key: key };
+      } else if (currentHatInfo) {
+        currentScript.push(blockDataForScript);
+      }
+    });
+    if(currentHatInfo) saveCurrentScript();
+  }
+
+  // --- Costume Editor Functions ---
+  function loadCostumeForActiveSprite() {
+      const sprite = getActiveTarget();
+      costumeCtx.clearRect(0, 0, 160, 160);
+      if (sprite && sprite.spriteState && sprite.spriteState.costume) {
+        const img = sprite.spriteState.costume;
+        const drawCostume = () => costumeCtx.drawImage(img, 0, 0, 160, 160);
+        if(img.complete) drawCostume(); else img.addEventListener('load', drawCostume);
+      }
+  }
+
+  function saveCurrentCostume() {
+    if (editingMode !== 'sprite') return;
+    const sprite = getActiveTarget();
+    if (!sprite) return;
+    sprite.spriteState.costumeDataURL = elements.costumeCanvas.toDataURL();
+    sprite.spriteState.costume.src = sprite.spriteState.costumeDataURL;
+    sprite.spriteState.costume.onload = () => { drawAllSprites(); renderSelectionUI(); };
+  }
+
+  function drawOnCostumeCanvas(e) {
+    if (!isDrawing || editingMode !== 'sprite') return;
+    costumeCtx.strokeStyle = elements.colorInput.value;
+    costumeCtx.lineWidth = elements.brushSizeSlider.value;
+    costumeCtx.lineCap = 'round';
+    costumeCtx.globalCompositeOperation = (currentTool === 'eraser') ? 'destination-out' : 'source-over';
+    costumeCtx.beginPath();
+    costumeCtx.moveTo(lastX, lastY);
+    costumeCtx.lineTo(e.offsetX, e.offsetY);
+    costumeCtx.stroke();
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+  }
+
+  // --- Execution Engine ---
+  let specialCodeHasRun = false;
+  function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+  function getResolvedValue(rawVal, entityState, contextVars) {
+      if (typeof rawVal !== 'string') return rawVal;
+      const val = rawVal.trim();
+      if (contextVars && val in contextVars) return contextVars[val];
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+      if (entityState && entityState.variables && val in entityState.variables) return entityState.variables[val];
+      if (stage.variables && val in stage.variables) return stage.variables[val];
+      const num = Number(val);
+      return isNaN(num) ? val : num;
+  }
+
+  function setVar(varName, value, entityState) {
+      if(entityState && varName in entityState.variables) {
+          entityState.variables[varName] = value;
+      } else if (stage.variables) {
+          (entityState || stage).variables[varName] = value;
+      }
+  }
+
+  async function runBlocks(blocks, entityState, spriteRef, contextVars = {}) {
+    if (!blocks || !programRunning) return;
+    for (const blockData of blocks) {
+        if (!programRunning) return;
+        const blockEl = document.createElement('div');
+        blockEl.innerHTML = blockData.html;
+        const type = blockData.type;
+        const inputs = Array.from(blockEl.querySelectorAll('input, select'));
+        const getVal = (i) => getResolvedValue(inputs[i].value, entityState, contextVars);
+        const getRaw = (i) => inputs[i].value;
+
+        switch (type) {
+            case 'move': if (entityState.pen) { const rad = entityState.angle * Math.PI / 180; entityState.x += getVal(0) * Math.sin(rad); entityState.y -= getVal(0) * Math.cos(rad); } break;
+            case 'turnRight': if (entityState.angle !== undefined) entityState.angle += getVal(0); break;
+            case 'turnLeft': if (entityState.angle !== undefined) entityState.angle -= getVal(0); break;
+            case 'goToXY': if(entityState) { entityState.x = getVal(0); entityState.y = getVal(1); } break;
+            case 'setX': if(entityState) entityState.x = getVal(0); break;
+            case 'setY': if(entityState) entityState.y = getVal(0); break;
+            case 'say': if (entityState.sayText !== undefined) { clearTimeout(entityState.sayTimeout); entityState.sayText = getVal(0); entityState.sayTimeout = setTimeout(() => { if (entityState) entityState.sayText = ''; }, getVal(1) * 1000); } break;
+            case 'think': if (entityState.sayText !== undefined) { clearTimeout(entityState.sayTimeout); entityState.sayText = getVal(0); } break;
+            case 'show': if(entityState) entityState.visible = true; break;
+            case 'hide': if(entityState) entityState.visible = false; break;
+            case 'setSize': if(entityState) entityState.size = getVal(0); break;
+            case 'changeSize': if(entityState) entityState.size += getVal(0); break;
+            case 'penDown': if (entityState.pen) entityState.pen.isDown = true; break;
+            case 'penUp': if (entityState.pen) entityState.pen.isDown = false; break;
+            case 'setPenColor': if(entityState.pen) entityState.pen.color = getRaw(0); break;
+            case 'setPenSize': if(entityState.pen) entityState.pen.size = getVal(0); break;
+            case 'stamp': if(entityState && entityState.costume) { const w = entityState.costume.width * (entityState.size / 100); const h = entityState.costume.height * (entityState.size / 100); penCtx.save(); penCtx.translate(entityState.x, entityState.y); penCtx.rotate(entityState.angle * Math.PI / 180); penCtx.drawImage(entityState.costume, -w/2, -h/2, w, h); penCtx.restore(); } break;
+            case 'penClear': drawBackdrop(); break;
+            case 'wait': await sleep(getVal(0) * 1000); break;
+            case 'setVar': setVar(getRaw(0), getVal(1), entityState); break;
+            case 'changeVar': setVar(getRaw(0), (getResolvedValue(getRaw(0), entityState, contextVars) || 0) + getVal(1), entityState); break;
+            case 'add': setVar(getRaw(0), getVal(1) + getVal(2), entityState); break;
+            case 'subtract': setVar(getRaw(0), getVal(1) - getVal(2), entityState); break;
+            case 'multiply': setVar(getRaw(0), getVal(1) * getVal(2), entityState); break;
+            case 'divide': setVar(getRaw(0), getVal(1) / getVal(2), entityState); break;
+            case 'random': setVar(getRaw(0), Math.random() * (getVal(2) - getVal(1)) + getVal(1), entityState); break;
+            case 'isGreaterThan': setVar(getRaw(0), getVal(1) > getVal(2), entityState); break;
+            case 'isLessThan': setVar(getRaw(0), getVal(1) < getVal(2), entityState); break;
+            case 'isEqual': setVar(getRaw(0), getVal(1) == getVal(2), entityState); break;
+            case 'and': setVar(getRaw(0), getVal(1) && getVal(2), entityState); break;
+            case 'or': setVar(getRaw(0), getVal(1) || getVal(2), entityState); break;
+            case 'not': setVar(getRaw(0), !getVal(1), entityState); break;
+            case 'isKeyPressed': setVar(getRaw(0), !!keysDown[getRaw(1).toLowerCase()], entityState); break;
+            case 'isMouseDown': setVar(getRaw(0), mouse.down, entityState); break;
+            case 'getMouse': setVar(getRaw(0), mouse[getRaw(1)]); break;
+            case 'ask': lastAnswer = prompt(getVal(0)) || ""; break;
+            case 'join': setVar(getRaw(0), String(getVal(1)) + String(getVal(2)), entityState); break;
+            case 'letter': setVar(getRaw(0), String(getVal(2)).charAt(getVal(1)-1), entityState); break;
+            case 'length': setVar(getRaw(0), String(getVal(1)).length, entityState); break;
+            case 'createClone':
+                if (!spriteRef) break;
+                const newCloneState = JSON.parse(JSON.stringify(spriteRef.spriteState));
+                newCloneState.isClone = true;
+                spriteRef.clones.push(newCloneState);
+                if (spriteRef.eventHandlers.whenIStartAsClone) {
+                    spriteRef.eventHandlers.whenIStartAsClone.forEach(script => {
+                        runBlocks(script, newCloneState, spriteRef);
+                    });
+                }
+                break;
+            case 'deleteClone':
+                if (!spriteRef || !entityState.isClone) break;
+                const index = spriteRef.clones.findIndex(c => c === entityState);
+                if (index > -1) spriteRef.clones.splice(index, 1);
+                return; // Stop script execution for this clone
+            case 'runBlock':
+                const blockName = getRaw(0);
+                const blockDef = stage.customBlocks[blockName];
+                if(blockDef) {
+                    const argValues = getRaw(1).split(',').map(v => getResolvedValue(v.trim(), entityState, contextVars));
+                    const newContext = {};
+                    blockDef.args.forEach((argName, idx) => {
+                        newContext[argName] = argValues[idx];
+                    });
+                    await runBlocks(blockDef.script, entityState, spriteRef, newContext);
+                }
+                break;
+            case 'code':
+                if (blockData.code) {
+                    specialCodeHasRun = true;
+                    parseAndRunSpecialCode(blockData.code);
+                }
+                break;
+        }
+    }
+  }
+
+  // --- SPECIAL CODE PARSER & RUNNER ---
+  function parseAndRunSpecialCode(code) {
+      ledGrid = new Map();
+      specialCodeVariables = {};
+      specialCodeHandlers = { button: {} };
+
+      const initialLines = [];
+      let currentHandler = null;
+
+      code.split('\n').forEach(line => {
+          const buttonMatch = line.trim().match(/^when button \((\d)\) pressed:$/);
+          if (buttonMatch) {
+              const buttonNum = buttonMatch[1];
+              specialCodeHandlers.button[buttonNum] = [];
+              currentHandler = specialCodeHandlers.button[buttonNum];
+              return;
+          }
+          
+          if(line.startsWith(' ') || line.startsWith('\t')) {
+              if(currentHandler) currentHandler.push(line.trim());
+          } else {
+              currentHandler = null;
+              initialLines.push(line.trim());
+          }
+      });
+      
+      elements.stageCanvas.style.display = 'none';
+      elements.specialCodeButtonsContainer.style.display = 'flex';
+      executeSpecialCodeLines(initialLines);
+  }
+
+  function executeSpecialCodeLines(lines) {
+      const getValue = (val) => {
+          val = val.trim();
+          if (specialCodeVariables.hasOwnProperty(val)) return specialCodeVariables[val];
+          return isNaN(Number(val)) ? val : Number(val);
+      };
+
+      for(const line of lines) {
+          if (line.startsWith('#') || !line) continue;
+
+          let match = line.match(/^(\w+)\s*=\s*(.+)$/);
+          if(match) {
+              const varName = match[1];
+              let value = match[2].trim();
+              let groupMatch = value.match(/^group leds at (.+)$/);
+              if (groupMatch) {
+                  const coordsStr = groupMatch[1];
+                  const coords = [];
+                  const coordPairs = coordsStr.match(/x\d+\s+y\d+/g) || [];
+                  coordPairs.forEach(pair => {
+                      const xy = pair.match(/x(\d+)\s+y(\d+)/);
+                      coords.push({x: parseInt(xy[1]), y: parseInt(xy[2])});
+                  });
+                  specialCodeVariables[varName] = coords;
+              } else {
+                 specialCodeVariables[varName] = getValue(value);
+              }
+              continue;
+          }
+
+          match = line.match(/^set led at (x\d+\s+y\d+|\w+)\s+(on|off)$/);
+          if(match) {
+              const target = match[1];
+              const state = match[2] === 'on';
+              let coordsToSet = [];
+              if(specialCodeVariables[target] && Array.isArray(specialCodeVariables[target])) {
+                  coordsToSet = specialCodeVariables[target];
+              } else {
+                  const xy = target.match(/x(\d+)\s+y(\d+)/);
+                  if (xy) coordsToSet.push({x: parseInt(xy[1]), y: parseInt(xy[2])});
+              }
+              coordsToSet.forEach(coord => ledGrid.set(`${coord.x},${coord.y}`, state));
+              continue;
+          }
+          
+          match = line.match(/^move led at x(\d+)\s+y(\d+)\s+to\s+x(\d+)\s+y(\d+)$/);
+          if(match) {
+              const key = `${match[1]},${match[2]}`;
+              if(ledGrid.has(key)) {
+                  ledGrid.set(`${match[3]},${match[4]}`, ledGrid.get(key));
+                  ledGrid.delete(key);
+              }
+          }
+      }
+      drawLedGrid(ledGrid);
+  }
+
+  function drawLedGrid(grid) {
+      penCtx.fillStyle = 'black';
+      penCtx.fillRect(0,0,500,400);
+      const ledWidth = 500 / 100;
+      const ledHeight = 400 / 100;
+      penCtx.fillStyle = 'lime';
+      for(const [key, value] of grid.entries()) {
+          if(value) {
+              const [x,y] = key.split(',');
+              penCtx.fillRect(x * ledWidth, y * ledHeight, ledWidth, ledHeight);
+          }
+      }
+  }
+
+  function gameLoop() {
+    if (!programRunning || specialCodeHasRun) return;
+    sprites.forEach(sprite => {
+        if (sprite.eventHandlers.forever) {
+            sprite.eventHandlers.forever.forEach(script => runBlocks(script, sprite.spriteState, sprite));
+        }
+    });
+    drawAllSprites();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  async function startProgram() {
+    programRunning = true;
+    specialCodeHasRun = false;
+    elements.specialCodeButtonsContainer.style.display = 'none';
+    elements.runBtn.textContent = 'Stop';
+    elements.runBtn.classList.add('stop');
+    elements.output.textContent = 'Running...';
+    saveBlocksFromProgram();
+    
+    sprites.forEach(s => parseScripts(s));
+    parseScripts(stage);
+    
+    const runQueue = [];
+    if (stage.eventHandlers.whenRun) runQueue.push(...stage.eventHandlers.whenRun.map(script => ({script, entityState: stage, spriteRef: null})));
+    sprites.forEach(s => {
+        s.clones = []; 
+        s.spriteState.x = 250; s.spriteState.y = 200; s.spriteState.angle = 90; s.spriteState.visible = true; s.spriteState.size = 100;
+        s.spriteState.pen.isDown = false;
+        if(s.eventHandlers.whenRun) runQueue.push(...s.eventHandlers.whenRun.map(script => ({script, entityState: s.spriteState, spriteRef: s})));
+    });
+
+    for(const item of runQueue) {
+        if(!programRunning) break;
+        // Check for code block inside this specific script
+        for(const blockData of item.script){
+            if(blockData.type === 'code' && blockData.code){
+                specialCodeHasRun = true;
+                parseAndRunSpecialCode(blockData.code);
+                break; // Stop executing this script
+            }
+        }
+        if(specialCodeHasRun) break; // Stop all further "when run" scripts
+        await runBlocks(item.script, item.entityState, item.spriteRef);
+    }
+    
+    if (!specialCodeHasRun) {
+        elements.stageCanvas.style.display = 'block';
+        drawBackdrop();
+        if (animationFrameId === null) gameLoop();
+    }
+  }
+
+  function stopProgram() {
+    programRunning = false;
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    elements.specialCodeButtonsContainer.style.display = 'none';
+    elements.runBtn.textContent = 'Run Project';
+    elements.runBtn.classList.remove('stop');
+    elements.output.textContent += '\nRun stopped by user.';
+    elements.stageCanvas.style.display = 'block';
+    sprites.forEach(s => { if (s.spriteState.sayTimeout) clearTimeout(s.spriteState.sayTimeout); });
+    sprites.forEach(s => { s.spriteState.x = 250; s.spriteState.y = 200; s.spriteState.angle = 90; s.spriteState.size = 100; });
+    drawBackdrop();
+    drawAllSprites();
+  }
+  
+  // --- PROJECT SHARING LOGIC ---
+  function shareProject() {
+      saveBlocksFromProgram(); 
+      const projectName = elements.projectName.value || 'Untitled Project';
+      const projectData = {
+          id: `proj_${Date.now()}`, name: projectName, creator: username,
+          sprites: sprites.map(s => ({ name: s.name, scripts: s.scripts, costumeDataURL: s.spriteState.costumeDataURL })),
+          stage: { scripts: stage.scripts || [], customBlocks: stage.customBlocks, backdropDataURL: stage.backdrops[stage.currentBackdropIndex].dataURL }
+      };
+      
+      let sharedProjects = JSON.parse(localStorage.getItem('shared_projects') || '[]');
+      sharedProjects.push(projectData);
+      localStorage.setItem('shared_projects', JSON.stringify(sharedProjects));
+      alert(`Project '${projectName}' shared successfully!`);
+  }
+
+  function browseSharedProjects() {
+      let sharedProjects = JSON.parse(localStorage.getItem('shared_projects') || '[]');
+      elements.sharedProjectsList.innerHTML = '';
+      if(sharedProjects.length === 0) {
+          elements.sharedProjectsList.innerHTML = '<li>No projects have been shared yet.</li>';
+      } else {
+          sharedProjects.reverse().forEach(proj => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span>'${proj.name}' by ${proj.creator}</span>`;
+              const loadBtn = document.createElement('button');
+              loadBtn.textContent = 'Load';
+              loadBtn.className = 'action-btn';
+              loadBtn.onclick = () => loadProject(proj.id);
+              li.appendChild(loadBtn);
+              elements.sharedProjectsList.appendChild(li);
+          });
+      }
+      elements.sharedProjectsModal.style.display = 'block';
+  }
+
+  async function loadProject(projectId) {
+    if (programRunning) stopProgram();
+    const sharedProjects = JSON.parse(localStorage.getItem('shared_projects') || '[]');
+    const projectData = sharedProjects.find(p => p.id === projectId);
+    if (!projectData) { alert("Project not found!"); return; }
+
+    await initStage(); 
+    sprites = []; 
+    stage.scripts = projectData.stage.scripts || [];
+    stage.customBlocks = projectData.stage.customBlocks || {};
+    const backdropImg = new Image();
+    backdropImg.src = projectData.stage.backdropDataURL;
+    try {
+        await backdropImg.decode();
+        stage.backdrops = [{ image: backdropImg, dataURL: backdropImg.src }];
+    } catch (e) { console.error("Failed to load saved backdrop.", e); }
+    
+    const spriteLoadPromises = (projectData.sprites || []).map(spriteData => {
+        const { sprite, promise } = createNewSprite(spriteData.name, spriteData.scripts, spriteData.costumeDataURL);
+        sprites.push(sprite);
+        return promise;
+    });
+    await Promise.all(spriteLoadPromises);
+
+    elements.projectName.value = projectData.name;
+    drawBackdrop();
+    
+    if (sprites.length > 0) {
+        switchEditingTarget('sprite', 0, true);
+    } else {
+        switchEditingTarget('stage', -1, true);
+    }
+    
+    elements.sharedProjectsModal.style.display = 'none';
+    alert(`Loaded project: '${projectData.name}'`);
+}
+
+  // --- USER AUTHENTICATION ---
+  function setupUserSystem() {
+    const loggedInUser = sessionStorage.getItem('loggedInUser');
+    if (loggedInUser) {
+        username = loggedInUser;
+        elements.usernameDisplay.textContent = username;
+        elements.loginModal.style.display = 'none';
+        initializeApp();
+    } else {
+        elements.loginModal.style.display = 'block';
+        elements.toggleToSignUp.onclick = () => { elements.signInView.style.display = 'none'; elements.signUpView.style.display = 'block'; elements.loginErrorMessage.textContent = ''; };
+        elements.toggleToSignIn.onclick = () => { elements.signInView.style.display = 'block'; elements.signUpView.style.display = 'none'; elements.signUpErrorMessage.textContent = ''; };
+        elements.signInBtn.onclick = () => {
+            const user = elements.signInUser.value, pass = elements.signInPass.value;
+            let users = JSON.parse(localStorage.getItem('block_ide_users') || '{}');
+            if (users[user] && users[user] === pass) { sessionStorage.setItem('loggedInUser', user); location.reload(); }
+            else { elements.loginErrorMessage.textContent = 'Invalid username or password.'; }
+        };
+        elements.signUpBtn.onclick = () => {
+            const user = elements.signUpUser.value, pass = elements.signUpPass.value;
+            if (!user || !pass) { elements.signUpErrorMessage.textContent = 'Username and password cannot be empty.'; return; }
+            let users = JSON.parse(localStorage.getItem('block_ide_users') || '{}');
+            if (users[user]) { elements.signUpErrorMessage.textContent = 'Username already taken.'; }
+            else { users[user] = pass; localStorage.setItem('block_ide_users', JSON.stringify(users)); sessionStorage.setItem('loggedInUser', user); location.reload(); }
+        };
+    }
+  }
+
+  // --- Event Listeners and Init ---
+  function setupEventListeners() {
+    elements.shareProjectBtn.onclick = shareProject;
+    elements.logoutBtn.onclick = () => { sessionStorage.removeItem('loggedInUser'); location.reload(); };
+    elements.runBtn.onclick = () => { if (programRunning) stopProgram(); else startProgram(); };
+    elements.newSpriteBtn.onclick = () => {
+      if (programRunning) return;
+      const { sprite, promise } = createNewSprite();
+      sprites.push(sprite);
+      promise.then(() => { switchEditingTarget('sprite', sprites.length - 1); });
+    };
+    elements.browseSharedBtn.onclick = browseSharedProjects;
+    elements.tabButtons.forEach(btn => {
+      btn.onclick = () => {
+        if (programRunning) return;
+        elements.tabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        renderPalette(currentTab);
+      };
+    });
+    elements.program.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const block = e.target.closest('.block');
+        if (block && block.dataset.type === 'code') {
+            activeCodeBlock = block;
+            elements.codeTextarea.value = block.dataset.code || '';
+            elements.codeEditorModal.style.display = 'block';
+        }
+    });
+    elements.program.ondragover = e => e.preventDefault();
+    elements.program.ondrop = e => {
+      e.preventDefault(); if (programRunning) return;
+      const html = e.dataTransfer.getData('text/html');
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const newBlock = temp.firstElementChild;
+      if (newBlock) { attachBlockListeners(newBlock); elements.program.appendChild(newBlock); saveBlocksFromProgram(); }
+    };
+    elements.costumeCanvas.addEventListener('mousedown', (e) => { if (editingMode === 'sprite') { isDrawing = true; [lastX, lastY] = [e.offsetX, e.offsetY]; }});
+    elements.costumeCanvas.addEventListener('mousemove', drawOnCostumeCanvas);
+    elements.costumeCanvas.addEventListener('mouseup', () => isDrawing = false);
+    elements.costumeCanvas.addEventListener('mouseout', () => isDrawing = false);
+    elements.saveCostumeBtn.onclick = saveCurrentCostume;
+    elements.clearCostumeBtn.onclick = () => { if (editingMode === 'sprite') costumeCtx.clearRect(0, 0, 160, 160); };
+    elements.brushBtn.onclick = () => { currentTool = 'brush'; elements.brushBtn.classList.add('active'); elements.eraserBtn.classList.remove('active'); };
+    elements.eraserBtn.onclick = () => { currentTool = 'eraser'; elements.eraserBtn.classList.add('active'); elements.brushBtn.classList.remove('active'); };
+    elements.sharedProjectsCloseBtn.onclick = () => elements.sharedProjectsModal.style.display = 'none';
+    elements.codeEditorCloseBtn.onclick = () => elements.codeEditorModal.style.display = 'none';
+    elements.saveCodeBtn.onclick = () => {
+        if(activeCodeBlock) {
+            activeCodeBlock.dataset.code = elements.codeTextarea.value;
+            saveBlocksFromProgram();
+        }
+        elements.codeEditorModal.style.display = 'none';
+    };
+    elements.specialBtn1.onclick = () => { if(programRunning && specialCodeHandlers.button[1]) executeSpecialCodeLines(specialCodeHandlers.button[1])};
+    elements.specialBtn2.onclick = () => { if(programRunning && specialCodeHandlers.button[2]) executeSpecialCodeLines(specialCodeHandlers.button[2])};
+    elements.specialBtn3.onclick = () => { if(programRunning && specialCodeHandlers.button[3]) executeSpecialCodeLines(specialCodeHandlers.button[3])};
+    document.addEventListener('keydown', e => {
+        let key = e.key.toLowerCase();
+        if (key === ' ') key = 'space';
+        if (!keysDown[key]) {
+            keysDown[key] = true;
+            if(programRunning) {
+                sprites.forEach(s => {
+                    if(s.eventHandlers.whenKeyPressed[key]) {
+                        s.eventHandlers.whenKeyPressed[key].forEach(script => runBlocks(script, s.spriteState, s));
+                    }
+                });
+            }
+        }
+    });
+    document.addEventListener('keyup', e => {
+        let key = e.key.toLowerCase();
+        if (key === ' ') key = 'space';
+        keysDown[key] = false;
+    });
+  }
+
+  // --- Main Application Initialization ---
+  async function initializeApp() {
+    try {
+      setupEventListeners();
+      const backdropPromise = initStage();
+      const { sprite: firstSprite, promise: costumePromise } = createNewSprite('Sprite 1');
+      sprites.push(firstSprite);
+      
+      await Promise.all([backdropPromise, costumePromise]);
+      
+      drawBackdrop();
+      drawAllSprites();
+      
+      switchEditingTarget('sprite', 0);
+      renderPalette(currentTab);
+    } catch (e) {
+      console.error("Initialization failed:", e);
+      document.body.innerHTML = `<div style="color:white; font-family:sans-serif; padding: 20px;">
+        <h1>Oops! A critical error occurred during app startup.</h1>
+        <pre style="background:#333; padding:10px; border-radius:5px;">${e.stack || e}</pre>
+      </div>`;
+    }
+  }
+
+  // Start the user system first. It will call initializeApp() upon successful login.
+  setupUserSystem();
+
+})();
+</script>
+</body>
+</html>
